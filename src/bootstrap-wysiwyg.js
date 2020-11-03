@@ -49,7 +49,10 @@
             this.initFileDrops(editor, options, toolbarBtnSelector);
         }
 
-        this.bindToolbar(editor, $(options.toolbarSelector), options, toolbarBtnSelector);
+        // Patch to allow a data-target attribute on a toolbar to tie it to
+        // a specific editor, when there is the possibility that multiple
+        // editors are in use simultaneously
+        this.bindToolbar(editor, $(options.toolbarSelector + '[data-target="#' + editor.attr('id') + '"]'), options, toolbarBtnSelector);
 
         editor.attr("contenteditable", true)
             .on("mouseup keyup mouseout", function () {
@@ -123,8 +126,15 @@
                 var commandArr = self.data(options.commandRole).split(" ");
                 var command = commandArr[0];
 
+                // Ensure we match tags correctly
+                var cval = document.queryCommandValue(command);
+                if (typeof cval == 'string') cval = cval.replace(/(<|>)/g, '');
+
+                var carrval = commandArr[1];
+                if (typeof carrval == 'string') carrval = carrval.replace(/(<|>)/g, '');
+
                 // If the command has an argument and its value matches this button. == used for string/number comparison
-                if (commandArr.length > 1 && document.queryCommandEnabled(command) && document.queryCommandValue(command) === commandArr[1]) {
+                if (commandArr.length > 1 && document.queryCommandEnabled(command) && cval === carrval) {
                     self.addClass(options.activeToolbarClass);
                 }
 
@@ -347,10 +357,16 @@
      *  Represenets an editor
      *  @constructor
      *  @param {object} userOptions - The default options selected by the user.
+     *  @return {this}
      */
 
     $.fn.wysiwyg = function (userOptions) {
         var wysiwyg = new Wysiwyg(this, userOptions);
+        return this;
+    };
+
+    $.fn.cleanHtml = function () {
+        return Wysiwyg.prototype.cleanHtml.apply(this);
     };
 
 })(window, window.jQuery);
